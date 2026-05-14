@@ -2,7 +2,7 @@
 
 *Using Difference-in-Differences, Synthetic Control, and Propensity Score Matching to rigorously evaluate environmental policy impacts*
 
-**Kyle Jones**  
+Kyle Jones  
 13 min read · Oct 6, 2025
 
 ---
@@ -23,15 +23,15 @@ This article demonstrates three rigorous methods—Difference-in-Differences, Sy
 
 Imagine California implements carbon pricing in 2018. Emissions drop 20% by 2023. Did the policy work?
 
-**What we observe:**
+What we observe:
 - California with policy: Emissions down 20%
 
-**What we don't observe but need:**
+What we don't observe but need:
 - California without policy: What would emissions have been?
 
-The **counterfactual** (California without policy) is impossible to observe—California can't exist in both states simultaneously. Causal inference constructs this counterfactual from data.
+The counterfactual (California without policy) is impossible to observe—California can't exist in both states simultaneously. Causal inference constructs this counterfactual from data.
 
-**Naive Comparison Fails:**
+Naive Comparison Fails:
 
 You might think comparing California to a state without the policy would work. But states differ in many ways including different energy mix (CA has more renewables), different economy (CA's GDP growth differs), different regulations (CA has stricter standards pre-policy), and different weather (affects electricity demand).
 
@@ -69,13 +69,13 @@ Was the policy effect immediate or gradual? Did anticipation effects occur befor
 
 The system creates year dummies for five years before and five years after treatment, omitting year -1 as the reference period. Interactions between treated status and each year dummy generate time-varying treatment effects. Plotting these coefficients with confidence intervals reveals the temporal pattern.
 
-**What to look for:**
+What to look for:
 
-**Pre-treatment coefficients near zero** confirm parallel trends. If coefficients before year 0 deviate significantly from zero, the parallel trends assumption fails—treated and control groups were already diverging.
+Pre-treatment coefficients near zero confirm parallel trends. If coefficients before year 0 deviate significantly from zero, the parallel trends assumption fails—treated and control groups were already diverging.
 
-**Post-treatment patterns** reveal implementation dynamics. Immediate negative coefficients indicate quick policy response. Gradual deepening suggests cumulative effects as compliance improves or investments materialize. Growing effects over time may indicate learning or capital stock turnover.
+Post-treatment patterns reveal implementation dynamics. Immediate negative coefficients indicate quick policy response. Gradual deepening suggests cumulative effects as compliance improves or investments materialize. Growing effects over time may indicate learning or capital stock turnover.
 
-**Confidence intervals** quantify precision. Narrow bands post-treatment mean precisely estimated effects. Widening intervals suggest growing uncertainty (often due to diverging state trajectories).
+Confidence intervals quantify precision. Narrow bands post-treatment mean precisely estimated effects. Widening intervals suggest growing uncertainty (often due to diverging state trajectories).
 
 (See Complete Implementation section for event study code)
 
@@ -85,7 +85,7 @@ The system creates year dummies for five years before and five years after treat
 
 What if you have only ONE treated unit? DiD requires multiple treated and control units for statistical inference. When analyzing a single treated entity—like Germany's nuclear phase-out or California's emissions trading—Synthetic Control provides the solution.
 
-**The idea:** Create a "synthetic California" by weighting control states to match pre-treatment California as closely as possible in all relevant dimensions. Then compare real California to its synthetic counterpart after treatment. The gap is the causal effect.
+The idea: Create a "synthetic California" by weighting control states to match pre-treatment California as closely as possible in all relevant dimensions. Then compare real California to its synthetic counterpart after treatment. The gap is the causal effect.
 
 ### Building the Synthetic Control
 
@@ -111,7 +111,7 @@ The average treatment effect computes the mean gap across post-treatment years, 
 
 How do we know the observed gap isn't due to random chance? Classical inference doesn't apply—we have one treated unit, not a sample. Synthetic Control uses placebo tests for statistical inference.
 
-**Placebo logic:** Apply synthetic control methodology to states that didn't receive treatment. These "placebo" treatments should show no effects (by definition, nothing changed in these states). If California's effect is larger than 95% of placebo effects, it's statistically significant at the 5% level.
+Placebo logic: Apply synthetic control methodology to states that didn't receive treatment. These "placebo" treatments should show no effects (by definition, nothing changed in these states). If California's effect is larger than 95% of placebo effects, it's statistically significant at the 5% level.
 
 The system iterates through control states, constructing synthetic versions of each using the remaining controls. For each placebo state, it calculates the post-treatment gap between actual and synthetic. The distribution of placebo effects characterizes what random chance looks like. California's actual effect is compared to this distribution to compute a p-value: the fraction of placebo effects as large or larger than California's effect.
 
@@ -125,11 +125,11 @@ If the p-value is less than 0.05, California's effect is statistically distingui
 
 DiD and Synthetic Control work at aggregate levels (states, countries). What about plant-level interventions where units choose whether to receive treatment?
 
-**Example:** Some power plants adopted efficiency upgrades in 2020. Did they reduce emissions?
+Example: Some power plants adopted efficiency upgrades in 2020. Did they reduce emissions?
 
-**Challenge:** Plants self-selected into treatment. Perhaps only well-run plants with available capital chose to upgrade. Comparing upgraders to non-upgraders confounds treatment effect with plant quality—selection bias undermines causal identification.
+Challenge: Plants self-selected into treatment. Perhaps only well-run plants with available capital chose to upgrade. Comparing upgraders to non-upgraders confounds treatment effect with plant quality—selection bias undermines causal identification.
 
-**Solution:** Propensity Score Matching creates balanced comparison groups by matching treated and control units with similar likelihoods of treatment based on observed covariates.
+Solution: Propensity Score Matching creates balanced comparison groups by matching treated and control units with similar likelihoods of treatment based on observed covariates.
 
 ### Step 1: Estimate Propensity Scores
 
@@ -163,7 +163,7 @@ Example output might show ATT of -0.035 tons/MWh (SE 0.012), indicating efficien
 
 Did matching succeed in balancing covariates? For each covariate, compare means between matched treated and matched control groups. Standardized differences (mean difference divided by pooled standard deviation, expressed as percentage) quantify balance.
 
-**Rule of thumb:** Standardized differences < 10% indicate good balance. Differences > 25% suggest poor balance—the covariate remains imbalanced after matching, threatening causal identification.
+Rule of thumb: Standardized differences < 10% indicate good balance. Differences > 25% suggest poor balance—the covariate remains imbalanced after matching, threatening causal identification.
 
 If balance checks fail, refine the propensity score model (add interactions, polynomials) or change matching algorithm (caliper matching, kernel matching) to achieve balance.
 
@@ -203,13 +203,13 @@ Causal inference transforms policy evaluation from guesswork to science. Instead
 
 These methods enable:
 
-**Evidence-based policy:** Know what works before scaling nationwide. A/B test policies like tech companies A/B test features.
+Evidence-based policy: Know what works before scaling nationwide. A/B test policies like tech companies A/B test features.
 
-**Accountability:** Did the promised benefits materialize? Rigorous evaluation holds policymakers accountable.
+Accountability: Did the promised benefits materialize? Rigorous evaluation holds policymakers accountable.
 
-**Efficient allocation:** Invest in policies with proven effects, not politically popular but ineffective ones.
+Efficient allocation: Invest in policies with proven effects, not politically popular but ineffective ones.
 
-**Learning:** Understand why some policies work and others fail. Refine and improve.
+Learning: Understand why some policies work and others fail. Refine and improve.
 
 The methods shown here—DiD for group-level policies, Synthetic Control for single units, PSM for individual interventions—cover most policy evaluation scenarios. Combined with domain expertise and careful thinking about identification assumptions, they provide credible answers to causal questions.
 
@@ -217,7 +217,7 @@ Correlation isn't causation—but with these tools, you can find out what is.
 
 ---
 
-**Causal Inference** · **Policy Analysis** · **Statistics** · **Energy** · **Python**
+Causal Inference · Policy Analysis · Statistics · Energy · Python
 
 ---
 
