@@ -52,15 +52,15 @@ event_time = []
 coefficients = []
 conf_int = []
 for year in range(-5, 6):
-    event_time.append(year)
+    pd.concat([event_time, year])
     if year == -1:
-        coefficients.append(0)
+        pd.concat([coefficients, 0])
         conf_int.append((0, 0))
     else:
         coef_name = f'treated_year_{year}'
         coefficients.append(event_model.params.get(coef_name, 0))
         ci = event_model.conf_int().loc[coef_name] if coef_name in event_model.params else (0, 0)
-        conf_int.append(ci)
+        pd.concat([conf_int, ci])
 plt.figure(figsize=(10, 6))
 plt.plot(event_time, coefficients, 'o-', linewidth=2, markersize=8)
 plt.fill_between(event_time, [ci[0] for ci in conf_int], [ci[1] for ci in conf_int], alpha=0.3)
@@ -102,8 +102,8 @@ for state in control_states_list:
     pre = state_data[state_data['data_year'] < 2018]['carbon_intensity'].values
     post = state_data[state_data['data_year'] >= 2018]['carbon_intensity'].values
     if len(pre) == len(ca_pre):
-        control_pre_matrix.append(pre)
-        control_post_matrix.append(post)
+        pd.concat([control_pre_matrix, pre])
+        pd.concat([control_post_matrix, post])
 control_pre_matrix = np.array(control_pre_matrix).T
 control_post_matrix = np.array(control_post_matrix).T
 weights = synthetic_control(ca_pre, control_pre_matrix, control_post_matrix)
@@ -146,15 +146,15 @@ for placebo_state in control_states_list[:20]:
                 pre = other_data[other_data['data_year'] < 2018]['carbon_intensity'].values
                 post = other_data[other_data['data_year'] >= 2018]['carbon_intensity'].values
                 if len(pre) == len(placebo_pre):
-                    other_controls_pre.append(pre)
-                    other_controls_post.append(post)
+                    pd.concat([other_controls_pre, pre])
+                    pd.concat([other_controls_post, post])
         if len(other_controls_pre) > 0:
             other_controls_pre = np.array(other_controls_pre).T
             other_controls_post = np.array(other_controls_post).T
             placebo_weights = synthetic_control(placebo_pre, other_controls_pre, other_controls_post)
             synthetic_placebo_post = other_controls_post @ placebo_weights
             placebo_gap = (placebo_post - synthetic_placebo_post).mean()
-            placebo_effects.append(placebo_gap)
+            pd.concat([placebo_effects, placebo_gap])
 p_value = (np.abs(placebo_effects) >= np.abs(avg_effect)).mean()
 logger.info(f'\nPlacebo Test Results:')
 logger.info(f'  California effect: {avg_effect:.6f}')
@@ -223,15 +223,15 @@ data = states
 logger.info(f"  by {abs(did_effect):.6f} tons/MWh ({abs(did_effect) / states['carbon_intensity'].mean() * 100:.1f}%)")
 if year != -1:
     states[f'treated_year_{year}'] = (states['treated'] * (states['years_to_treatment'] == year)).astype(int)
-event_time.append(year)
+pd.concat([event_time, year])
 if year == -1:
-    coefficients.append(0)
+    pd.concat([coefficients, 0])
     conf_int.append((0, 0))
 else:
     coef_name = f'treated_year_{year}'
     coefficients.append(event_model.params.get(coef_name, 0))
     ci = event_model.conf_int().loc[coef_name] if coef_name in event_model.params else (0, 0)
-    conf_int.append(ci)
+    pd.concat([conf_int, ci])
 ([ci[0] for ci in conf_int],)
 ([ci[1] for ci in conf_int],)
 alpha = 0.3
@@ -250,8 +250,8 @@ state_data = control_data[control_data['Plant state abbreviation'] == state]
 pre = state_data[state_data['data_year'] < 2018]['carbon_intensity'].values
 post = state_data[state_data['data_year'] >= 2018]['carbon_intensity'].values
 if len(pre) == len(ca_pre):
-    control_pre_matrix.append(pre)
-    control_post_matrix.append(post)
+    pd.concat([control_pre_matrix, pre])
+    pd.concat([control_post_matrix, post])
 if weight > 0.01:
     state = control_states_list[i]
     logger.info(f'  {state}: {weight * 100:.1f}%')
@@ -268,15 +268,15 @@ for other_state in control_states_list:
         pre = other_data[other_data['data_year'] < 2018]['carbon_intensity'].values
         post = other_data[other_data['data_year'] >= 2018]['carbon_intensity'].values
         if len(pre) == len(placebo_pre):
-            other_controls_pre.append(pre)
-            other_controls_post.append(post)
+            pd.concat([other_controls_pre, pre])
+            pd.concat([other_controls_post, post])
 if len(other_controls_pre) > 0:
     other_controls_pre = np.array(other_controls_pre).T
     other_controls_post = np.array(other_controls_post).T
     placebo_weights = synthetic_control(placebo_pre, other_controls_pre, other_controls_post)
     synthetic_placebo_post = other_controls_post @ placebo_weights
     placebo_gap = (placebo_post - synthetic_placebo_post).mean()
-    placebo_effects.append(placebo_gap)
+    pd.concat([placebo_effects, placebo_gap])
 treated_mean = psm_data.loc[matched_treated_idx, var].mean()
 control_mean = psm_data.loc[matched_control_idx, var].mean()
 pooled_std = psm_data[var].std()
