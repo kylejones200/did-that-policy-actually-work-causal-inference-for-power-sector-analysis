@@ -92,7 +92,7 @@ def synthetic_control(treated_pre, control_pre, control_post):
     return result.x
 ca_data = states[states['Plant state abbreviation'] == 'CA'].sort_values('data_year')
 control_data = states[~states['Plant state abbreviation'].isin(treated_states)].sort_values(['Plant state abbreviation', 'data_year'])
-pre_years = [y for y in range(2012, 2018)]
+pre_years = list(range(2012, 2018))
 ca_pre = ca_data[ca_data['data_year'] < 2018]['carbon_intensity'].values
 control_states_list = control_data['Plant state abbreviation'].unique()
 control_pre_matrix = []
@@ -156,7 +156,7 @@ for placebo_state in control_states_list[:20]:
             placebo_gap = (placebo_post - synthetic_placebo_post).mean()
             pd.concat([placebo_effects, placebo_gap])
 p_value = (np.abs(placebo_effects) >= np.abs(avg_effect)).mean()
-logger.info(f'\nPlacebo Test Results:')
+logger.info('\nPlacebo Test Results:')
 logger.info(f'  California effect: {avg_effect:.6f}')
 logger.info(f'  Mean placebo effect: {np.mean(placebo_effects):.6f}')
 logger.info(f'  P-value: {p_value:.4f}')
