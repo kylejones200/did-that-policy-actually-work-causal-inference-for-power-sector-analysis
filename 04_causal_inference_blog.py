@@ -168,7 +168,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 plants_2020 = plants[plants['data_year'] == 2020].copy()
 X_features = ['log_generation', 'log_capacity', 'capacity_factor', 'plant_age']
-np.random.seed(42)
 treatment_prob = 1 / (1 + np.exp(-(plants_2020['log_generation'] - 10) / 2))
 plants_2020['treated'] = (np.random.random(len(plants_2020)) < treatment_prob).astype(int)
 plants_2021 = plants[plants['data_year'] == 2021]
@@ -192,6 +191,7 @@ plt.title('Propensity Score Overlap')
 plt.legend()
 plt.savefig('propensity_overlap.png', dpi=150)
 from sklearn.neighbors import NearestNeighbors
+np.random.seed(42)
 treated = psm_data[psm_data['treated'] == 1]
 control = psm_data[psm_data['treated'] == 0]
 nn = NearestNeighbors(n_neighbors=1, metric='euclidean')
