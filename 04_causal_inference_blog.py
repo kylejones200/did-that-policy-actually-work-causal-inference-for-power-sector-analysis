@@ -11,6 +11,11 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import statsmodels.formula.api as smf
+from scipy.optimize import minimize
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import StandardScaler
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,13 +30,10 @@ treatment_year = 2018
 states["treated"] = states["Plant state abbreviation"].isin(treated_states).astype(int)
 states["post"] = (states["data_year"] >= treatment_year).astype(int)
 states["carbon_intensity"] = (
-    states["State annual CO2 emissions (tons)"]
-    / states["State annual net generation (MWh)"]
+    states["State annual CO2 emissions (tons)"] / states["State annual net generation (MWh)"]
 )
 pre_period = states[states["data_year"] < treatment_year]
-pre_trends = (
-    pre_period.groupby(["data_year", "treated"])["carbon_intensity"].mean().unstack()
-)
+pre_trends = pre_period.groupby(["data_year", "treated"])["carbon_intensity"].mean().unstack()
 plt.figure(figsize=(10, 6))
 plt.plot(pre_trends.index, pre_trends[0], "o-", label="Control States", linewidth=2)
 plt.plot(pre_trends.index, pre_trends[1], "s-", label="Treated States", linewidth=2)
@@ -41,7 +43,6 @@ plt.title("Pre-Treatment Trends: Are They Parallel?")
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.savefig("parallel_trends.png", dpi=150)
-import statsmodels.formula.api as smf
 
 states["treat_post"] = states["treated"] * states["post"]
 model = smf.ols("carbon_intensity ~ treated + post + treat_post", data=states).fit(
@@ -81,17 +82,11 @@ for year in range(-5, 6):
     else:
         coef_name = f"treated_year_{year}"
         coefficients.append(event_model.params.get(coef_name, 0))
-        ci = (
-            event_model.conf_int().loc[coef_name]
-            if coef_name in event_model.params
-            else (0, 0)
-        )
+        ci = event_model.conf_int().loc[coef_name] if coef_name in event_model.params else (0, 0)
         conf_int.append(ci)
 plt.figure(figsize=(10, 6))
 plt.plot(event_time, coefficients, "o-", linewidth=2, markersize=8)
-plt.fill_between(
-    event_time, [ci[0] for ci in conf_int], [ci[1] for ci in conf_int], alpha=0.3
-)
+plt.fill_between(event_time, [ci[0] for ci in conf_int], [ci[1] for ci in conf_int], alpha=0.3)
 plt.axhline(0, color="black", linestyle="--")
 plt.axvline(-0.5, color="red", linestyle="--", label="Policy Implementation")
 plt.xlabel("Years Relative to Policy")
@@ -100,13 +95,11 @@ plt.title("Event Study: Dynamic Policy Effects")
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.savefig("event_study.png", dpi=150)
-from scipy.optimize import minimize
 
 
 def synthetic_control(treated_pre, control_pre, control_post):
     """
     Find optimal weights for synthetic control
-
     Returns: weights that minimize distance between treated and synthetic control
     """
 
@@ -118,16 +111,14 @@ def synthetic_control(treated_pre, control_pre, control_post):
     constraints = {"type": "eq", "fun": lambda w: np.sum(w) - 1}
     bounds = [(0, 1) for _ in range(n_controls)]
     initial = np.ones(n_controls) / n_controls
-    result = minimize(
-        objective, initial, method="SLSQP", bounds=bounds, constraints=constraints
-    )
+    result = minimize(objective, initial, method="SLSQP", bounds=bounds, constraints=constraints)
     return result.x
 
 
 ca_data = states[states["Plant state abbreviation"] == "CA"].sort_values("data_year")
-control_data = states[
-    ~states["Plant state abbreviation"].isin(treated_states)
-].sort_values(["Plant state abbreviation", "data_year"])
+control_data = states[~states["Plant state abbreviation"].isin(treated_states)].sort_values(
+    ["Plant state abbreviation", "data_year"]
+)
 pre_years = list(range(2012, 2018))
 ca_pre = ca_data[ca_data["data_year"] < 2018]["carbon_intensity"].values
 control_states_list = control_data["Plant state abbreviation"].unique()
@@ -168,9 +159,7 @@ plt.plot(
 )
 plt.plot(range(2018, 2024), synthetic_ca_post, "s--", linewidth=2, color="red")
 plt.axvline(2017.5, color="black", linestyle="--", alpha=0.5)
-plt.fill_between(
-    range(2018, 2024), ca_post, synthetic_ca_post, alpha=0.3, color="green"
-)
+plt.fill_between(range(2018, 2024), ca_post, synthetic_ca_post, alpha=0.3, color="green")
 plt.xlabel("Year")
 plt.ylabel("Carbon Intensity")
 plt.title("Synthetic Control: California vs Synthetic California")
@@ -179,29 +168,17 @@ plt.grid(True, alpha=0.3)
 plt.savefig("synthetic_control.png", dpi=150)
 placebo_effects = []
 for placebo_state in control_states_list[:20]:
-    placebo_data = control_data[
-        control_data["Plant state abbreviation"] == placebo_state
-    ]
-    placebo_pre = placebo_data[placebo_data["data_year"] < 2018][
-        "carbon_intensity"
-    ].values
-    placebo_post = placebo_data[placebo_data["data_year"] >= 2018][
-        "carbon_intensity"
-    ].values
+    placebo_data = control_data[control_data["Plant state abbreviation"] == placebo_state]
+    placebo_pre = placebo_data[placebo_data["data_year"] < 2018]["carbon_intensity"].values
+    placebo_post = placebo_data[placebo_data["data_year"] >= 2018]["carbon_intensity"].values
     if len(placebo_pre) == len(ca_pre):
         other_controls_pre = []
         other_controls_post = []
         for other_state in control_states_list:
             if other_state != placebo_state:
-                other_data = control_data[
-                    control_data["Plant state abbreviation"] == other_state
-                ]
-                pre = other_data[other_data["data_year"] < 2018][
-                    "carbon_intensity"
-                ].values
-                post = other_data[other_data["data_year"] >= 2018][
-                    "carbon_intensity"
-                ].values
+                other_data = control_data[control_data["Plant state abbreviation"] == other_state]
+                pre = other_data[other_data["data_year"] < 2018]["carbon_intensity"].values
+                post = other_data[other_data["data_year"] >= 2018]["carbon_intensity"].values
                 if len(pre) == len(placebo_pre):
                     other_controls_pre.append(pre)
                     other_controls_post.append(post)
@@ -223,15 +200,11 @@ if p_value < 0.05:
     pass
 else:
     pass
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
 
 plants_2020 = plants[plants["data_year"] == 2020].copy()
 X_features = ["log_generation", "log_capacity", "capacity_factor", "plant_age"]
 treatment_prob = 1 / (1 + np.exp(-(plants_2020["log_generation"] - 10) / 2))
-plants_2020["treated"] = (np.random.random(len(plants_2020)) < treatment_prob).astype(
-    int
-)
+plants_2020["treated"] = (np.random.random(len(plants_2020)) < treatment_prob).astype(int)
 plants_2021 = plants[plants["data_year"] == 2021]
 outcome_map = plants_2021.set_index("Plant ID")["carbon_intensity"]
 plants_2020["outcome_2021"] = plants_2020["Plant ID"].map(outcome_map)
@@ -256,7 +229,6 @@ plt.ylabel("Frequency")
 plt.title("Propensity Score Overlap")
 plt.legend()
 plt.savefig("propensity_overlap.png", dpi=150)
-from sklearn.neighbors import NearestNeighbors
 
 np.random.seed(42)
 treated = psm_data[psm_data["treated"] == 1]
@@ -269,9 +241,7 @@ matched_treated_idx = treated.index
 treated_outcomes = psm_data.loc[matched_treated_idx, "outcome_2021"]
 control_outcomes = psm_data.loc[matched_control_idx, "outcome_2021"]
 att = (treated_outcomes.values - control_outcomes.values).mean()
-se = (treated_outcomes.values - control_outcomes.values).std() / np.sqrt(
-    len(matched_treated_idx)
-)
+se = (treated_outcomes.values - control_outcomes.values).std() / np.sqrt(len(matched_treated_idx))
 logger.info(f"\nAverage Treatment Effect on Treated (ATT): {att:.6f}")
 logger.info(f"Standard Error: {se:.6f}")
 logger.info(f"95% CI: [{att - 1.96 * se:.6f}, {att + 1.96 * se:.6f}]")
@@ -287,4 +257,3 @@ for var in X_features:
     logger.info(f"    Treated mean: {treated_mean:.4f}")
     logger.info(f"    Control mean: {control_mean:.4f}")
     logger.info(f"    Standardized difference: {std_diff:.2f}%")
-
